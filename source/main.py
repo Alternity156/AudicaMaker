@@ -11,7 +11,8 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.filechooser import FileChooserListView
 from kivy.core.window import Window
-from kivy.clock import Clock
+from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.factory import Factory
 from kivy.config import Config
 
 from threading import Thread
@@ -29,12 +30,65 @@ import shutil
 import time
 import datetime
 
+Config.set('input', 'mouse', 'mouse,disable_multitouch') #red dots problem fix maybe?
 Config.set('graphics', 'fullscreen', 0)
 Config.set('graphics', 'borderless', 0)
 Config.set('graphics', 'height', 576)
 Config.set('graphics', 'width', 1024)
 Config.set('graphics','resizable',0)
 Config.write()
+
+class HoverBehavior(object):
+    """Hover behavior.
+    :Events:
+        `on_enter`
+            Fired when mouse enter the bbox of the widget.
+        `on_leave`
+            Fired when the mouse exit the widget 
+    """
+
+    hovered = BooleanProperty(False)
+    border_point= ObjectProperty(None)
+    '''Contains the last relevant point received by the Hoverable. This can
+    be used in `on_enter` or `on_leave` in order to know where was dispatched the event.
+    '''
+
+    def __init__(self, **kwargs):
+        self.register_event_type('on_enter')
+        self.register_event_type('on_leave')
+        Window.bind(mouse_pos=self.on_mouse_pos)
+        super(HoverBehavior, self).__init__(**kwargs)
+
+    def on_mouse_pos(self, *args):
+        if not self.get_root_window():
+            return # do proceed if I'm not displayed <=> If have no parent
+        pos = args[1]
+        #Next line to_widget allow to compensate for relative layout
+        inside = self.collide_point(*self.to_widget(*pos))
+        if self.hovered == inside:
+            #We have already done what was needed
+            return
+        self.border_point = pos
+        self.hovered = inside
+        if inside:
+            self.dispatch('on_enter')
+        else:
+            self.dispatch('on_leave')
+
+    def on_enter(self):
+        pass
+
+    def on_leave(self):
+        pass
+        
+Factory.register('HoverBehavior', HoverBehavior)
+
+class HoverInput(TextInput, HoverBehavior):
+    def on_enter(self, *args):
+        pass #print "You are in, through this point", self.border_point, self.hovered
+
+    def on_leave(self, *args):
+        pass #print "You left through this point", self.border_point, self.hovered
 
 class KeyInput(TextInput):
 
@@ -77,7 +131,7 @@ class MainApp(FloatLayout):
     audioLabel = Label(text="AUDIO", pos=(-465,275), bold=True, font_size=30)
     
     mainAudioLabel = Label(text="Main Audio File", pos=(-458,255))
-    mainAudioInput = TextInput(multiline=False, pos=(1,507), size_hint=(.2,.05))
+    mainAudioInput = HoverInput(multiline=False, pos=(1,507), size_hint=(.2,.05))
     
     mainAudioLeftPanLabel = Label(text="Pan L", pos=(-285,255))
     mainAudioLeftPanInput = FloatInput(text="0.0", multiline=False, pos=(208,507), size_hint=(.04,.05))
@@ -92,7 +146,7 @@ class MainApp(FloatLayout):
     mainAudioRightVolInput = FloatInput(text="0.0", multiline=False, pos=(334,507), size_hint=(.04,.05))
     
     extrasAudioLabel = Label(text="Extras Audio File", pos=(-454,210))
-    extrasAudioInput = TextInput(multiline=False, pos=(1,462), size_hint=(.2,.05))
+    extrasAudioInput = HoverInput(multiline=False, pos=(1,462), size_hint=(.2,.05))
     
     extrasAudioLeftPanLabel = Label(text="Pan L", pos=(-285,210))
     extrasAudioLeftPanInput = FloatInput(text="0.0", multiline=False, pos=(208,462), size_hint=(.04,.05))
@@ -107,7 +161,7 @@ class MainApp(FloatLayout):
     extrasAudioRightVolInput = FloatInput(text="0.0", multiline=False, pos=(334,462), size_hint=(.04,.05))
     
     leftSustainAudioLabel = Label(text="Left Sustain Audio File", pos=(-435,165))
-    leftSustainAudioInput = TextInput(multiline=False, pos=(1,417), size_hint=(.2,.05))
+    leftSustainAudioInput = HoverInput(multiline=False, pos=(1,417), size_hint=(.2,.05))
     
     leftSustainAudioPanLabel = Label(text="Pan", pos=(-264,165))
     leftSustainAudioPanInput = FloatInput(text="0.0", multiline=False, pos=(229,417), size_hint=(.04,.05))
@@ -116,7 +170,7 @@ class MainApp(FloatLayout):
     leftSustainAudioVolInput = FloatInput(text="0.0", multiline=False, pos=(312,417), size_hint=(.04,.05))
     
     rightSustainAudioLabel = Label(text="Right Sustain Audio File", pos=(-430,120))
-    rightSustainAudioInput = TextInput(multiline=False, pos=(1,372), size_hint=(.2,.05))
+    rightSustainAudioInput = HoverInput(multiline=False, pos=(1,372), size_hint=(.2,.05))
     
     rightSustainAudioPanLabel = Label(text="Pan", pos=(-264,120))
     rightSustainAudioPanInput = FloatInput(text="0.0", multiline=False, pos=(229,372), size_hint=(.04,.05))
@@ -129,19 +183,19 @@ class MainApp(FloatLayout):
     dataLabel = Label(text="DATA", pos=(-472,70), bold=True, font_size=30)
     
     midiFileLabel = Label(text="MIDI File", pos=(-480,49))
-    midiFileInput = TextInput(multiline=False, pos=(1,301), size_hint=(.2,.05))
+    midiFileInput = HoverInput(multiline=False, pos=(1,301), size_hint=(.2,.05))
     
     beginnerCuesLabel = Label(text="Beginner Cues File", pos=(-448,4))
-    beginnerCuesInput = TextInput(multiline=False, pos=(1,256), size_hint=(.2,.05))
+    beginnerCuesInput = HoverInput(multiline=False, pos=(1,256), size_hint=(.2,.05))
     
     moderateCuesLabel = Label(text="Moderate Cues File", pos=(-445,-41))
-    moderateCuesInput = TextInput(multiline=False, pos=(1,211), size_hint=(.2,.05))
+    moderateCuesInput = HoverInput(multiline=False, pos=(1,211), size_hint=(.2,.05))
     
     advancedCuesLabel = Label(text="Advanced Cues File", pos=(-445,-86))
-    advancedCuesInput = TextInput(multiline=False, pos=(1,166), size_hint=(.2,.05))
+    advancedCuesInput = HoverInput(multiline=False, pos=(1,166), size_hint=(.2,.05))
     
     expertCuesLabel = Label(text="Expert Cues File", pos=(-456,-131))
-    expertCuesInput = TextInput(multiline=False, pos=(1,121), size_hint=(.2,.05))
+    expertCuesInput = HoverInput(multiline=False, pos=(1,121), size_hint=(.2,.05))
     
     ## DESC
     
@@ -310,6 +364,8 @@ class MainApp(FloatLayout):
         self.add_widget(self.makeAudicaButton)
         self.add_widget(self.messageTextbox)
         
+        Window.bind(on_dropfile=self.dropfile_handle)
+        
         self.loadButton.bind(on_release=lambda i:self._create_popup(i))
         self.saveButton.bind(on_release=lambda i:self.save_project())
         self.importDescButton.bind(on_release=lambda i:self._create_popup(i))
@@ -328,6 +384,43 @@ class MainApp(FloatLayout):
         self.autoSongIDCheckbox.bind(active=self.autoSongIDHandler)
         
         Thread(target=self.welcome_message).start()
+        
+    def dropfile_handle(self, instance, file):
+        if self.mainAudioInput.hovered == True:
+            self.mainAudioInput.text = file
+            self.mainAudioInput.cursor = (len(self.mainAudioInput.text), 0)
+        elif self.extrasAudioInput.hovered == True:
+            self.extrasAudioInput.text = file
+            self.extrasAudioInput.cursor = (len(self.extrasAudioInput.text), 0)
+        elif self.leftSustainAudioInput.hovered == True:
+            self.leftSustainAudioInput.text = file
+            self.leftSustainAudioInput.cursor = (len(self.leftSustainAudioInput.text), 0)
+        elif self.rightSustainAudioInput.hovered == True:
+            self.rightSustainAudioInput.text = file
+            self.rightSustainAudioInput.cursor = (len(self.rightSustainAudioInput.text), 0)
+        elif self.midiFileInput.hovered == True:
+            self.midiFileInput.text = file
+            self.midiFileInput.cursor = (len(self.midiFileInput.text), 0)
+        elif self.beginnerCuesInput.hovered == True:
+            self.beginnerCuesInput.text = file
+            self.beginnerCuesInput.cursor = (len(self.beginnerCuesInput.text), 0)
+        elif self.moderateCuesInput.hovered == True:
+            self.moderateCuesInput.text = file
+            self.moderateCuesInput.cursor = (len(self.moderateCuesInput.text), 0)
+        elif self.advancedCuesInput.hovered == True:
+            self.advancedCuesInput.text = file
+            self.advancedCues.cursor = (len(self.advancedCues.text), 0)
+        elif self.expertCuesInput.hovered == True:
+            self.expertCuesInput.text = file
+            self.expertCuesInput.cursor = (len(self.expertCuesInput.text), 0)
+        else:
+            if file[-5:] == ".desc":
+                self.import_desc(file)
+            elif file[-5:] == ".json":
+                try:
+                    self.load_project(file)
+                except:
+                    self.send_message("ERROR LOADING PROJECT")
         
     def autoSongIDHandler(self, checkbox, value):
         if value:
@@ -800,14 +893,13 @@ class MainApp(FloatLayout):
         self.send_message("====================================================")
         self.send_message("PREPARING DATA FILES...")
         
-        if self.useMidiForCuesCheckbox.active == True:
-            if os.path.isfile(self.midiFileInput.text) == True:
-                shutil.copyfile(self.midiFileInput.text, midi_file)
-                files.append(midi_file)
-                midiFileReady = True
-                self.send_message("CREATED " + midi_file.split(os.sep)[-1])
-            else:
-                return False
+        if os.path.isfile(self.midiFileInput.text) == True:
+            shutil.copyfile(self.midiFileInput.text, midi_file)
+            files.append(midi_file)
+            midiFileReady = True
+            self.send_message("CREATED " + midi_file.split(os.sep)[-1])
+        else:
+            return False
         
             
         
@@ -895,6 +987,8 @@ class MainApp(FloatLayout):
             instance.cursor = (len(instance.text), 0)
         
     def _create_popup(self, instance):
+        if instance.text == "Load Project":
+            self.value = os.getcwd() + os.sep + "PROJECTS"
         # create popup layout
         content = BoxLayout(orientation='vertical', spacing=5)
         popup_width = min(10, 10)
@@ -927,6 +1021,8 @@ class MainApp(FloatLayout):
 class MyApp(App):
 
     def build(self):
+        self.title = "Audica Maker"
+        self.icon = "audica_logo.png"
         return MainApp()
 
 

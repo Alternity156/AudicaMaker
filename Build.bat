@@ -1,2 +1,5 @@
 pip install --upgrade pyinstaller
-pythom -m PyInstaller AudicaMaker.spec
+python -m PyInstaller --noconsole --name AudicaMaker source\main.py
+python spec_fix.py
+python -m PyInstaller AudicaMaker.spec
+pause
