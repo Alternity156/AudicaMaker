@@ -1,7 +1,7 @@
 # AudicaMaker
 A tool used to create audica files.
 
-New version http://www.mediafire.com/file/bmfe1od176jjv4w/AudicaMaker.rar/file
+New version https://github.com/Alternity156/AudicaMaker/releases/tag/1.0
 
 -Red dots should be fixed
 
