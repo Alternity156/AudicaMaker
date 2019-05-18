@@ -1,4 +1,3 @@
-from subprocess import check_output
 from mutagen.oggvorbis import OggVorbis
 
 import os
@@ -20,17 +19,33 @@ class errorChecker():
     main_pan_r = 0.0
     main_vol_l = 0.0
     main_vol_r = 0.0
+    main_lenght = 0.0
+    main_channels = 0
+    main_bitrate = 0
+    main_sample_rate = 0
     
     sustain_l_pan = 0.0
     sustain_l_vol = 0.0
+    sustain_l_lenght = 0.0
+    sustain_l_channels = 0
+    sustain_l_bitrate = 0
+    sustain_l_sample_rate = 0
     
     sustain_r_pan = 0.0
     sustain_r_vol = 0.0
+    sustain_r_lenght = 0.0
+    sustain_r_channels = 0
+    sustain_r_bitrate = 0
+    sustain_r_sample_rate = 0
     
     extras_pan_l = 0.0
     extras_pan_r = 0.0
     extras_vol_l = 0.0
     extras_vol_r = 0.0
+    extras_lenght = 0.0
+    extras_channels = 0
+    extras_bitrate = 0
+    extras_sample_rate = 0
     
     songID = ""
     title = ""
@@ -148,6 +163,8 @@ class errorChecker():
                     file_checks.append(True)
                 else:
                     file_checks.append(False)
+                if file_checks[1] == False and file_checks[2] == False:
+                    self.minorErrors.append("Only OGG and MOGG audio is supported.")
             else:
                 file_checks.append(False)
                 file_checks.append(False)
@@ -169,19 +186,56 @@ class errorChecker():
             self.minorErrors.append("Right sustain audio does not exist.")
             self.audio_to_silence.append(["_sustain_r", self.sustain_r_audio])
         if checks[0][2] == True:
-            self.audio_to_convert.append(["song", self.main_audio])
+            try:
+                oggInfo = self.ogg_info(self.main_audio)
+                self.main_lenght = oggInfo[0]
+                self.main_channels = oggInfo[1]
+                self.main_bitrate = oggInfo[2]
+                self.main_sample_rate = oggInfo[3]
+                self.audio_to_convert.append(["song", self.main_audio])
+                if self.main_channels != 2:
+                    self.minorErrors.append("Main audio does not have 2 channels.")
+            except:
+                self.majorErrors.append("Error while reading " + self.main_audio)
         if checks[1][2] == True:
-            self.audio_to_convert.append(["_extras", self.extras_audio])
+            try:
+                oggInfo = self.ogg_info(self.extras_audio)
+                self.extras_lenght = oggInfo[0]
+                self.extras_channels = oggInfo[1]
+                self.extras_bitrate = oggInfo[2]
+                self.extras_sample_rate = oggInfo[3]
+                self.audio_to_convert.append(["_extras", self.extras_audio])
+                if self.extras_channels != 2:
+                    self.minorErrors.append("Extras audio does not have 2 channels.")
+            except:
+                self.majorErrors.append("Error while reading " + self.extras_audio)
         if checks[2][2] == True:
-            self.audio_to_convert.append(["_sustain_l", self.sustain_l_audio])
+            try:
+                oggInfo = self.ogg_info(self.sustain_l_audio)
+                self.sustain_l_lenght = oggInfo[0]
+                self.sustain_l_channels = oggInfo[1]
+                self.sustain_l_bitrate = oggInfo[2]
+                self.sustain_l_sample_rate = oggInfo[3]
+                self.audio_to_convert.append(["_sustain_l", self.sustain_l_audio])
+                if self.sustain_l_channels != 1:
+                    self.minorErrors.append("Left sustain audio does not have 1 channel.")
+            except:
+                self.majorErrors.append("Error while reading " + self.sustain_l_audio)
         if checks[3][2] == True:
-            self.audio_to_convert.append(["_sustain_r", self.sustain_r_audio])
+            try:
+                oggInfo = self.ogg_info(self.sustain_r_audio)
+                self.sustain_r_lenght = oggInfo[0]
+                self.sustain_r_channels = oggInfo[1]
+                self.sustain_r_bitrate = oggInfo[2]
+                self.sustain_r_sample_rate = oggInfo[3]
+                self.audio_to_convert.append("_sustain_r", self.sustain_r_audio)
+                if self.sustain_r_channels != 1:
+                    self.minorErrors.append("Right sustain audio does not have 1 channel.")
+            except:
+                self.majorErrors.append("Error while reading " + self.sustain_r_audio)
         if self.ignoreMinorErrors == True:
             self.minorErrors = []
         return checks
-    
-    def ogg_to_mogg(self, input_file, output_file):
-        return check_output("ogg2mogg.exe " + input_file + " " + output_file)
         
     def ogg_info(self, ogg_file):
         f = OggVorbis(ogg_file)
