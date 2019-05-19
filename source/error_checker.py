@@ -1,6 +1,8 @@
 from mutagen.oggvorbis import OggVorbis
 
 import os
+import midi
+import json
 
 class errorChecker():
 
@@ -14,6 +16,8 @@ class errorChecker():
     extras_audio = ""
     sustain_l_audio = ""
     sustain_r_audio = ""
+    
+    midi_tempo = 0.0
     
     main_pan_l = 0.0
     main_pan_r = 0.0
@@ -121,9 +125,15 @@ class errorChecker():
         if self.useMidiForCues == False:
             if os.path.isfile(midi) == False:
                 self.minorErrors.append("MIDI file does not exist.")
+            else:
+                if midi[-4:] == ".mid":
+                    self.check_midi(midi)
             for file in cues:
                 if os.path.isfile(file):
-                    checks.append(True)
+                    if file[-5:] == ".cues":
+                        checks.append(True)
+                    else:
+                        checks.append(False)
                 else:
                     checks.append(False)
             if checks[0] == False and checks[1] == False and checks[2] == False and checks[3] == False:
@@ -132,18 +142,55 @@ class errorChecker():
             else:
                 if checks[0] == False:
                     self.minorErrors.append("Beginner cues does not exist.")
+                else:
+                    self.check_cues(cues[0])
                 if checks[1] == False:
                     self.minorErrors.append("Moderate cues does not exist.")
+                else:
+                    self.check_cues(cues[1])
                 if checks[2] == False:
                     self.minorErrors.append("Advanced cues does not exist.")
+                else:
+                    self.check_cues(cues[2])
                 if checks[3] == False:
                     self.minorErrors.append("Expert cues does not exist.")
+                else:
+                    self.check_cues(cues[3])
         else:
             if os.path.isfile(midi) == False:
                 self.majorErrors.append("MIDI file does not exist.")
+            else:
+                if midi[-4:] == ".mid":
+                    self.check_midi(midi)
         if self.ignoreMinorErrors == True:
             self.minorErrors = []
         return checks
+        
+    def check_cues(self, cuesfile):
+        try:
+            cues = json.load(open(cuesfile, "r"))
+            totalCues = 0
+            for cue in cues["cues"]:
+                totalCues = totalCues + 1
+        except:
+            self.majorErrors.append("Error loading cues: " + cuesfile)
+        
+    def check_midi(self, midifile):
+        try:
+            pattern = midi.read_midifile(midifile)
+            ppq = pattern.resolution
+            for track in pattern:
+                for event in track:
+                    if type(event) is midi.SetTempoEvent:
+                        if event.tick == 0:
+                            if ppq == 480:
+                                self.midi_tempo = event.get_bpm()
+                            else:
+                                self.majorErrors.append("PPQ of MIDI file is not 480.")
+                        else:
+                            self.majorErrors.append("Error getting BPM.")
+        except:
+            self.majorErrors.append("Error loading MIDI file.")
     
     def check_audio(self):
         files = [self.main_audio, self.extras_audio, self.sustain_l_audio, self.sustain_r_audio]
