@@ -870,7 +870,10 @@ class MainApp(FloatLayout):
         self.desc_file.songID = self.songIDInput.text
         self.desc_file.moggSong = self.songIDInput.text + ".moggsong"
         self.desc_file.title = self.titleInput.text
-        self.desc_file.artist = self.artistInput.text + "\n" + self.authorInput.text
+        if self.inGameAuthorCheckbox.active == True:
+            self.desc_file.artist = self.artistInput.text + "\n" + self.authorInput.text
+        else:
+            self.desc_file.artist = self.artistInput.text
         self.desc_file.midiFile = self.songIDInput.text + ".mid"
         self.desc_file.sustainSongRight = self.songIDInput.text + "_sustain_r.moggsong"
         self.desc_file.sustainSongLeft = self.songIDInput.text + "_sustain_l.moggsong"
