@@ -23,6 +23,7 @@ from config import config
 from audica import desc, sustain, song, extras
 from error_checker import errorChecker
 from midi_handler import make_midi_for_bpm
+from authoring_validation import authoringValidator
 
 import re
 import os
@@ -275,6 +276,8 @@ class MainApp(FloatLayout):
     song_file = song()
     extras_file = extras()
     error_checker = errorChecker()
+    authoring_validator = authoringValidator()
+    
 
     def __init__(self, **kwargs):
         super(MainApp, self).__init__(**kwargs)
@@ -909,21 +912,25 @@ class MainApp(FloatLayout):
         if os.path.isfile(self.beginnerCuesInput.text) == True:
             shutil.copyfile(self.beginnerCuesInput.text, temp_dir + os.sep + "beginner.cues")
             files.append(temp_dir + os.sep + "beginner.cues")
+            self.authoring_validator.beginner_cues = temp_dir + os.sep + "beginner.cues"
             beginnerCuesReady = True
             self.send_message("CREATED beginner.cues")
         if os.path.isfile(self.moderateCuesInput.text) == True:
             shutil.copyfile(self.moderateCuesInput.text, temp_dir + os.sep + "moderate.cues")
             files.append(temp_dir + os.sep + "moderate.cues")
+            self.authoring_validator.moderate_cues = temp_dir + os.sep + "moderate.cues"
             moderateCuesReady = True
             self.send_message("CREATED moderate.cues")
         if os.path.isfile(self.advancedCuesInput.text) == True:
             shutil.copyfile(self.advancedCuesInput.text, temp_dir + os.sep + "advanced.cues")
             files.append(temp_dir + os.sep + "advanced.cues")
+            self.authoring_validator.advanced_cues = temp_dir + os.sep + "advanced.cues"
             advancedCuesReady = True
             self.send_message("CREATED advanced.cues")
         if os.path.isfile(self.expertCuesInput.text) == True:
             shutil.copyfile(self.expertCuesInput.text, temp_dir + os.sep + "expert.cues")
             files.append(temp_dir + os.sep + "expert.cues")
+            self.authoring_validator.expert_cues = temp_dir + os.sep + "expert.cues"
             expertCuesReady = True
             self.send_message("CREATED expert.cues")
         if self.useMidiForCuesCheckbox.active == False:
@@ -939,6 +946,11 @@ class MainApp(FloatLayout):
                 return False
         else:
             self.send_message("DATA FILES PREPARATION DONE")
+        
+        self.send_message("====================================================")
+        self.send_message("REMOVING AUTHORING ERRORS")
+        
+        self.authoring_validator.begin_validation()
         
         self.send_message("====================================================")
         self.send_message("MAKING AUDICA FILE...")
