@@ -179,6 +179,7 @@ class errorChecker():
         try:
             pattern = midi.read_midifile(midifile)
             ppq = pattern.resolution
+            self.midi_tempo = 0
             for track in pattern:
                 for event in track:
                     if type(event) is midi.SetTempoEvent:
@@ -188,7 +189,11 @@ class errorChecker():
                             else:
                                 self.majorErrors.append("PPQ of MIDI file is not 480.")
                         else:
-                            self.majorErrors.append("Error getting BPM.")
+                            if self.midi_tempo != 0:
+                                if self.midi_tempo != event.get_bpm():
+                                    self.majorErrors.append("Audica only supports one BPM marker")
+                            else:
+                                self.majorErrors.append("Error getting BPM.")
         except:
             self.majorErrors.append("Error loading MIDI file.")
     
@@ -275,7 +280,7 @@ class errorChecker():
                 self.sustain_r_channels = oggInfo[1]
                 self.sustain_r_bitrate = oggInfo[2]
                 self.sustain_r_sample_rate = oggInfo[3]
-                self.audio_to_convert.append("_sustain_r", self.sustain_r_audio)
+                self.audio_to_convert.append(["_sustain_r", self.sustain_r_audio])
                 if self.sustain_r_channels != 1:
                     self.minorErrors.append("Right sustain audio does not have 1 channel.")
             except:
@@ -291,3 +296,6 @@ class errorChecker():
         bitrate = f.info.bitrate
         sample_rate = f.info.sample_rate
         return [length, channels, bitrate, sample_rate]
+
+#error_checker = errorChecker()
+#print error_checker.ogg_info("ddududduduremix-RIGHT.ogg")
