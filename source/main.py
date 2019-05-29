@@ -467,17 +467,6 @@ class MainApp(FloatLayout):
         self.send_message("")
         self.send_message("Project is saved in the OUTPUT folder with songID as filename.")
         
-    '''def send_message(self, message):
-        message = message + "\n"
-        self.messageTextbox.cursor = (len(self.messageTextbox.text), self.current_message_row)
-        self.messageTextbox.readonly = False
-        Clock.schedule_once(self.messageTextbox.insert_text(message, from_undo=False), 0)
-        self.messageTextbox.readonly = True
-        self.messageTextbox.cursor = (len(self.messageTextbox.text), self.current_message_row)
-        self.current_message_row = self.current_message_row + 1
-        f = open("log.txt", "a")
-        f.write("[" + str(datetime.datetime.fromtimestamp(time.time()).isoformat()) + "] " + message)'''
-        
     def send_message(self, message):
         message = message + "\n"
         self.messageTextbox.cursor = (len(self.messageTextbox.text), self.current_message_row)

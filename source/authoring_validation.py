@@ -1,7 +1,4 @@
-'''file containing authoring_validation class which contains various checks to prevent potential issues
-TODO:
-    integrate into main.py
-    look at more effective way to validate_cues without as much memory or processor requirements'''
+'''file containing authoring_validation class which contains various checks to prevent potential issues'''
 
 import json
 import sys
