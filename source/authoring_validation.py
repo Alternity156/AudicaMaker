@@ -6,6 +6,7 @@ from re import sub
 from collections import OrderedDict
 import os
 import midi
+import shutil
 
 class authoringValidator():
 
@@ -24,6 +25,7 @@ class authoringValidator():
     def validate_cues(self):
         '''checks and fixes duplicate cues'''
         
+        tmp_dir = os.path.join(os.getcwd(), "author_tmp")
         cue_files = [self.beginner_cues, self.moderate_cues,
                         self.advanced_cues, self.expert_cues]
         # holds the edited version of any cue files that were edited
@@ -38,13 +40,24 @@ class authoringValidator():
                     if cue not in tmp_cue_data:
                         tmp_cue_data.append(cue)
                 if len(tmp_cue_data) < len(cue_data["cues"]):
-                    target_file = os.path.splitext(cue_file)[0]+"_tmp.cues"
+                    if os.path.exists(tmp_dir):
+                        shutil.rmtree(tmp_dir)
+                    os.mkdir(tmp_dir)
+                    target_file = os.path.join(tmp_dir, os.path.basename(cue_file))
                     cue_data["cues"] = tmp_cue_data
                     with open(target_file, 'w') as fd:
                         # stores index and file path for returning
                         # index used to know what difficulty file belongs to
-                        cue_files_edited.append((cue_file_index, target_file))
+                        cue_files_edited.append(target_file)
                         fd.write(sub(", ", ",", json.dumps(cue_data, sort_keys=False, indent=4)))
+                    if cue_file_index == 0:
+                        self.beginner_cues = target_file
+                    elif cue_file_index == 1:
+                        self.moderate_cues = target_file
+                    elif cue_file_index == 2:
+                        self.advanced_cues = target_file
+                    elif cue_file_index == 3:
+                        self.expert_cues = target_file
         if len(cue_files_edited) == 0:
             return True
         else:
@@ -120,3 +133,10 @@ class authoringValidator():
         results.append(self.validate_midi())
         self.error_messages = "".join(self.error_messages)
         return results
+        
+    def cleanup(self):
+        '''cleans up temp directory'''
+        
+        tmp_dir = os.path.join(os.getcwd(),"author_tmp")
+        if os.path.isdir(tmp_dir):
+            shutil.rmtree(tmp_dir)
