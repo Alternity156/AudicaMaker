@@ -15,6 +15,8 @@ from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.factory import Factory
 from kivy.config import Config
 
+from kivy.clock import Clock
+
 from threading import Thread
 from subprocess import check_output
 from zipfile import ZipFile
@@ -465,6 +467,17 @@ class MainApp(FloatLayout):
         self.send_message("")
         self.send_message("Project is saved in the OUTPUT folder with songID as filename.")
         
+    '''def send_message(self, message):
+        message = message + "\n"
+        self.messageTextbox.cursor = (len(self.messageTextbox.text), self.current_message_row)
+        self.messageTextbox.readonly = False
+        Clock.schedule_once(self.messageTextbox.insert_text(message, from_undo=False), 0)
+        self.messageTextbox.readonly = True
+        self.messageTextbox.cursor = (len(self.messageTextbox.text), self.current_message_row)
+        self.current_message_row = self.current_message_row + 1
+        f = open("log.txt", "a")
+        f.write("[" + str(datetime.datetime.fromtimestamp(time.time()).isoformat()) + "] " + message)'''
+        
     def send_message(self, message):
         message = message + "\n"
         self.messageTextbox.cursor = (len(self.messageTextbox.text), self.current_message_row)
@@ -622,13 +635,15 @@ class MainApp(FloatLayout):
             self.songIDInput.text = re.sub(pattern, "", self.authorInput.text + self.titleInput.text).lower()
             self.songIDInput.readonly = True
         if self.check_for_errors() == True:
-            if self.make_audica_file() == True:
-                self.send_message("====================================================")
-                self.send_message("DONE!")
+            if self.validate_authoring() == True:
+                if self.make_audica_file() == True:
+                    self.send_message("====================================================")
+                    self.send_message("DONE!")
         else:
             self.send_message("====================================================")
             self.send_message("FOUND MAJOR ERRORS, CANCELING...")
         self.enable_all_buttons()
+        
     
     def check_for_errors(self):
         self.error_checker.reset()
@@ -672,7 +687,7 @@ class MainApp(FloatLayout):
         self.error_checker.cuesToMidi = self.convertCuesToMidiCheckbox.active
         
         self.send_message("====================================================")
-        self.send_message("BEGINNING CHECK...")
+        self.send_message("BEGINNING ERROR CHECK...")
         
         self.send_message("====================================================")
         self.send_message("CHECKING USER INPUT...")
@@ -696,9 +711,30 @@ class MainApp(FloatLayout):
                 self.send_message(message)
                 
         self.send_message("====================================================")
-        self.send_message("CHECK PASSED")
+        self.send_message("ERROR CHECK PASSED")
         return True
         
+        
+    def validate_authoring(self):
+        
+        self.send_message("====================================================")
+        self.authoring_validator.beginner_cues = self.beginnerCuesInput.text
+        self.authoring_validator.moderate_cues = self.moderateCuesInput.text
+        self.authoring_validator.advanced_cues = self.advancedCuesInput.text
+        self.authoring_validator.expert_cues = self.expertCuesInput.text
+        self.authoring_validator.midi_file = self.midiFileInput.text
+        self.send_message("BEGINNING AUTHORING VALIDATION")
+        author_check_results = self.authoring_validator.begin_validation()
+        if False in author_check_results:
+            if self.authoring_validator.major_error == True:
+                self.send_message("MAJOR ERROR OCCURED, VALIDATION FAILED\n")
+            self.send_message(self.authoring_validator.error_messages)
+            if self.authoring_validator.major_error == True:
+                self.authoring_validator.major_error = False
+                return False     
+        return True
+                        
+
     def make_audica_file(self):
     
         files = []
@@ -736,7 +772,7 @@ class MainApp(FloatLayout):
         advancedCuesReady = False
         expertCuesReady = False
         
-        self.send_message("====================================================")
+        self.send_message("\n====================================================")
         self.send_message("CREATING MOGGSONG FILES...")
         
         self.song_file.moggPath = main_audio_mogg.split(os.sep)[-1]
@@ -946,11 +982,6 @@ class MainApp(FloatLayout):
                 return False
         else:
             self.send_message("DATA FILES PREPARATION DONE")
-        
-        self.send_message("====================================================")
-        self.send_message("REMOVING AUTHORING ERRORS")
-        
-        self.authoring_validator.begin_validation()
         
         self.send_message("====================================================")
         self.send_message("MAKING AUDICA FILE...")
