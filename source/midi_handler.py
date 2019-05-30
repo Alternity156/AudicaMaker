@@ -54,97 +54,136 @@ def make_midi_for_bpm(filename, bpm):
 
     midifile = filename
     midi.write_midifile(midifile, pattern)
+
+
+class midiConverter():
+    """class to handle converting between midi and cues"""
     
-def cues_to_midi(cuesfile):
-
-    cues = json.load(open(cuesfile, 'r'))
-
+    cueFiles = {}
+    songID = ""
+    targetDirectory = ""
     pattern = midi.Pattern(resolution=480, format=1)
-
     HeaderTrack = midi.Track(tick_relative=False)
-    RHTrack = midi.Track(tick_relative=False)
-    LHTrack = midi.Track(tick_relative=False)
-    EitherTrack = midi.Track(tick_relative=False)
 
-    HeaderTrack.append(make_track_name(cuesfile.replace('.cues','')))
-    RHTrack.append(make_track_name('Community - RH'))
-    LHTrack.append(make_track_name('Community - LH'))
-    EitherTrack.append(make_track_name('Community - Either'))
-
-    if "tempo" in cues:
-        tempoEvent = midi.SetTempoEvent()
-        tempoEvent.set_bpm(cues["tempo"])
-        HeaderTrack.append(tempoEvent)
-
-    for cue in cues["cues"]:
-        if cue["handType"] == 1:
-            track = RHTrack
-        elif cue["handType"] == 2:
-            track = LHTrack
-        else:
-            track = EitherTrack
-
-        behavior = cue["behavior"]
-        channel = 0
-        if behavior == 2:
-            channel = 1
-        elif behavior == 1:
-            channel = 2
-        elif behavior == 4:
-            channel = 3
-        elif behavior == 5:
-            channel = 4
-
-        tick = cue["tick"]
-        tickLength = cue["tickLength"]
-
-        track.append(midi.NoteOnEvent(tick=tick, velocity=cue["velocity"], pitch=cue["pitch"], channel=channel))
-        track.append(midi.NoteOffEvent(tick=tick+tickLength, velocity=0, pitch=cue["pitch"], channel=channel))
-
-        if cue["gridOffset"]["x"] != 0:
-            track.append(midi.ControlChangeEvent(tick=tick, control=16, value=int(cue["gridOffset"]["x"] * 64 + 64)))
-        if cue["gridOffset"]["y"] != 0:
-            track.append(midi.ControlChangeEvent(tick=tick, control=17, value=int(cue["gridOffset"]["y"] * 64 + 64)))
-
-    if "repeaters" in cues:
-        for repeater in cues["repeaters"]:
-            if repeater["handType"] == 1:
-                track = RHTrack
-            elif repeater["handType"] == 2:
-                track = LHTrack
-            elif repeater["handType"] == 0:
-                track = EitherTrack
-            else:
-                continue
-
-            track.append(midi.NoteOnEvent(tick=repeater["tick"], velocity=repeater["velocity"], pitch=repeater["pitch"]))
-            track.append(midi.NoteOffEvent(tick=repeater["tick"]+repeater["tickLength"], velocity=0, pitch=repeater["pitch"]))
-
-    HeaderTrack = midi.Track(sorted(HeaderTrack, key=lambda x: x.tick), tick_relative=False)
-    RHTrack = midi.Track(sorted(RHTrack, key=lambda x: x.tick), tick_relative=False)
-    LHTrack = midi.Track(sorted(LHTrack, key=lambda x: x.tick), tick_relative=False)
-    EitherTrack = midi.Track(sorted(EitherTrack, key=lambda x: x.tick), tick_relative=False)
-
-    HeaderTrack.append(midi.EndOfTrackEvent(tick=HeaderTrack[-1].tick))
-    RHTrack.append(midi.EndOfTrackEvent(tick=RHTrack[-1].tick))
-    LHTrack.append(midi.EndOfTrackEvent(tick=LHTrack[-1].tick))
-    EitherTrack.append(midi.EndOfTrackEvent(tick=EitherTrack[-1].tick))
-
-    HeaderTrack.make_ticks_rel()
-    RHTrack.make_ticks_rel()
-    LHTrack.make_ticks_rel()
-    EitherTrack.make_ticks_rel()
-
-    pattern.append(HeaderTrack)
-    pattern.append(RHTrack)
-    pattern.append(LHTrack)
-    pattern.append(EitherTrack)
-
-    midifile = cuesfile.replace('.cues','.mid')
-    print "writing midi file to " + midifile
-
-    midi.write_midifile(midifile, pattern)
+    def __init__(self, cueFiles="", songID=""):
     
+        self.cueFiles = cueFiles
+        self.songID = songID
+        '''self.difficultyDefinition = [
+            "Expert",
+            "Hard",
+            "Normal",
+            "Easy"
+        ]'''
+    
+    def convert_to_midi(self):
+        for fileIndex, (difficulty, cueFile) in enumerate([
+                (diff, cue) for diff,cue in self.cueFiles.items() if 
+                cue !=""][::-1]):
+            if fileIndex == 0:
+                self._cues_to_midi(cueFile, difficulty)
+            else:
+                self._cues_to_midi(cueFile, difficulty, firstRun=False)
+    
+    def _make_track_name(self, name):
+        """class to convert text into string of int that define the string."""
+        
+        event = midi.TrackNameEvent()
+        event.text = name
+        for char in name:
+            event.data.append(ord(char))
+        return event
+        
+    
+    def _cues_to_midi(self, cuesfile, difficulty, firstRun=True):
+        """Takes cuesfile and converts to midi by storing in pattern."""
+        
+        cues = json.load(open(cuesfile, 'r'))
+        RHTrack = midi.Track(tick_relative=False)
+        LHTrack = midi.Track(tick_relative=False)
+        MeleeTrack = midi.Track(tick_relative=False)
+        if firstRun:
+            self.HeaderTrack.append(self._make_track_name(self.songID))
+            
+        RHTrack.append(self._make_track_name(" ".join((difficulty, "- RH"))))
+        LHTrack.append(self._make_track_name(" ".join((difficulty, "- LH"))))
+        MeleeTrack.append(self._make_track_name(" ".join((difficulty, "- Melee"))))
+
+        if "tempo" in cues and firstRun:
+            timeSignatureEvent = midi.TimeSignatureEvent()
+            timeSignatureEvent.data = [4,2,24,8]
+            tempoEvent = midi.SetTempoEvent()
+            tempoEvent.set_bpm(cues["tempo"])
+            self.HeaderTrack.extend((timeSignatureEvent,tempoEvent))
+
+        for cue in cues["cues"]:
+            if cue["handType"] == 1:
+                track = RHTrack
+            elif cue["handType"] == 2:
+                track = LHTrack
+            else:
+                track = MeleeTrack
+            behavior = cue["behavior"]
+            channel = 0
+            if behavior == 2:
+                channel = 1
+            elif behavior == 1:
+                channel = 2
+            elif behavior == 4:
+                channel = 3
+            elif behavior == 5:
+                channel = 4
+            tick = cue["tick"]
+            tickLength = cue["tickLength"]
+            track.append(midi.NoteOnEvent(tick=tick, velocity=cue["velocity"], pitch=cue["pitch"], channel=channel))
+            track.append(midi.NoteOffEvent(tick=tick+tickLength, velocity=0, pitch=cue["pitch"], channel=channel))
+            if cue["gridOffset"]["x"] != 0:
+                track.append(midi.ControlChangeEvent(tick=tick, control=16, value=int(cue["gridOffset"]["x"] * 64 + 64)))
+            if cue["gridOffset"]["y"] != 0:
+                track.append(midi.ControlChangeEvent(tick=tick, control=17, value=int(cue["gridOffset"]["y"] * 64 + 64)))
+
+        if "repeaters" in cues:
+            for repeater in cues["repeaters"]:
+                if repeater["handType"] == 1:
+                    track = RHTrack
+                elif repeater["handType"] == 2:
+                    track = LHTrack
+                elif repeater["handType"] == 0:
+                    track = MeleeTrack
+                else:
+                    continue
+                track.append(midi.NoteOnEvent(tick=repeater["tick"], velocity=repeater["velocity"], pitch=repeater["pitch"]))
+                track.append(midi.NoteOffEvent(tick=repeater["tick"]+repeater["tickLength"], velocity=0, pitch=repeater["pitch"]))
+
+        if firstRun:
+            self.HeaderTrack = midi.Track(sorted(self.HeaderTrack, key=lambda x: x.tick), tick_relative=False)
+        RHTrack = midi.Track(sorted(RHTrack, key=lambda x: x.tick), tick_relative=False)
+        LHTrack = midi.Track(sorted(LHTrack, key=lambda x: x.tick), tick_relative=False)
+        MeleeTrack = midi.Track(sorted(MeleeTrack, key=lambda x: x.tick), tick_relative=False)
+
+        if firstRun:
+            self.HeaderTrack.append(midi.EndOfTrackEvent(tick=self.HeaderTrack[-1].tick))
+        LHTrack.append(midi.EndOfTrackEvent(tick=LHTrack[-1].tick))
+        RHTrack.append(midi.EndOfTrackEvent(tick=RHTrack[-1].tick))
+        MeleeTrack.append(midi.EndOfTrackEvent(tick=MeleeTrack[-1].tick))
+
+        if firstRun:
+            self.HeaderTrack.make_ticks_rel()
+        RHTrack.make_ticks_rel()
+        LHTrack.make_ticks_rel()
+        MeleeTrack.make_ticks_rel()
+
+        if firstRun:
+            self.pattern.append(self.HeaderTrack)
+        self.pattern.append(LHTrack)
+        self.pattern.append(RHTrack)
+        self.pattern.append(MeleeTrack)
+
+    def write_midi(self):
+        midiFile = os.path.join(self.targetDirectory, "".join((self.songID, ".mid")))
+        midi.write_midifile(midiFile, self.pattern)
+        
+        
 def midi_to_cues(midifile):
 
     def make_custom_sort(orders):
@@ -268,3 +307,16 @@ def midi_to_cues(midifile):
 
     with open(cuesfile, 'w') as outfile:  
         json.dump(cues, outfile, indent=4)
+        
+if __name__ == "__main__":
+    import os
+    os.chdir(r"C:\users\marin\documents\github\audicamaker\source\test_files")
+    cueFiles = OrderedDict(
+       [(0, "beginner.cues"),
+        (1, "moderate.cues"),
+        (2, "advanced.cues"),
+        (3, "expert.cues")]
+    )
+    converter = midiConverter(cueFiles=cueFiles, songID="thespace")
+    converter.convert_to_midi()
+    converter.write_midi()

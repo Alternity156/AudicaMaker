@@ -122,7 +122,22 @@ class errorChecker():
         midi = self.midi
         cues = [self.beginner_cues, self.moderate_cues, self.advanced_cues, self.expert_cues]
         checks = []
-        if self.useMidiForCues == False:
+        
+        if self.cuesToMidi == True:
+            for file in cues:
+                if os.path.isfile(file):
+                    if file[-5:] == ".cues":
+                        checks.append(True)
+                    else:
+                        checks.append(False)
+                else:
+                    checks.append(False)
+            if self.cuesToMidi == True:
+                if not any(checks):
+                    self.majorErrors.append("No cues file to convert/ invalid file, need at least one.")
+                    self.majorErrors.append("If you didn't mean to convert cue to midi, uncheck it")
+        
+        elif self.useMidiForCues == False:
             if os.path.isfile(midi) == False:
                 self.minorErrors.append("MIDI file does not exist.")
             else:
@@ -136,8 +151,9 @@ class errorChecker():
                         checks.append(False)
                 else:
                     checks.append(False)
+
             if checks[0] == False and checks[1] == False and checks[2] == False and checks[3] == False:
-                self.majorErrors.append("No cues file exists, need at least one.")
+                self.majorErrors.append("No cues file exists/ invalid file, need at least one.")
                 self.majorErrors.append("If you are using MIDI for cues you must tick the checkbox.")
             else:
                 if checks[0] == False:
@@ -179,7 +195,6 @@ class errorChecker():
         try:
             pattern = midi.read_midifile(midifile)
             ppq = pattern.resolution
-            self.midi_tempo = 0
             for track in pattern:
                 for event in track:
                     if type(event) is midi.SetTempoEvent:
@@ -189,11 +204,7 @@ class errorChecker():
                             else:
                                 self.majorErrors.append("PPQ of MIDI file is not 480.")
                         else:
-                            if self.midi_tempo != 0:
-                                if self.midi_tempo != event.get_bpm():
-                                    self.majorErrors.append("Audica only supports one BPM marker")
-                            else:
-                                self.majorErrors.append("Error getting BPM.")
+                            self.majorErrors.append("Error getting BPM.")
         except:
             self.majorErrors.append("Error loading MIDI file.")
     
@@ -280,7 +291,7 @@ class errorChecker():
                 self.sustain_r_channels = oggInfo[1]
                 self.sustain_r_bitrate = oggInfo[2]
                 self.sustain_r_sample_rate = oggInfo[3]
-                self.audio_to_convert.append(["_sustain_r", self.sustain_r_audio])
+                self.audio_to_convert.append("_sustain_r", self.sustain_r_audio)
                 if self.sustain_r_channels != 1:
                     self.minorErrors.append("Right sustain audio does not have 1 channel.")
             except:
@@ -296,6 +307,3 @@ class errorChecker():
         bitrate = f.info.bitrate
         sample_rate = f.info.sample_rate
         return [length, channels, bitrate, sample_rate]
-
-#error_checker = errorChecker()
-#print error_checker.ogg_info("ddududduduremix-RIGHT.ogg")

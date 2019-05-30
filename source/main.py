@@ -20,11 +20,12 @@ from kivy.clock import Clock
 from threading import Thread
 from subprocess import check_output
 from zipfile import ZipFile
+from collections import OrderedDict
 
 from config import config
 from audica import desc, sustain, song, extras
 from error_checker import errorChecker
-from midi_handler import make_midi_for_bpm
+from midi_handler import make_midi_for_bpm, midiConverter
 from authoring_validation import authoringValidator
 
 import re
@@ -279,6 +280,7 @@ class MainApp(FloatLayout):
     extras_file = extras()
     error_checker = errorChecker()
     authoring_validator = authoringValidator()
+    midi_converter = midiConverter()
     
 
     def __init__(self, **kwargs):
@@ -361,8 +363,10 @@ class MainApp(FloatLayout):
         self.add_widget(self.ignoreMinorErrorsCheckbox)
         #self.add_widget(self.convertMidiToCuesLabel)
         #self.add_widget(self.convertMidiToCuesCheckbox)
-        #self.add_widget(self.convertCuesToMidiLabel)
-        #self.add_widget(self.convertCuesToMidiCheckbox)
+        
+        self.add_widget(self.convertCuesToMidiLabel)
+        self.add_widget(self.convertCuesToMidiCheckbox)
+        
         self.add_widget(self.saveButton)
         self.add_widget(self.loadButton)
         self.add_widget(self.importDescButton)
@@ -544,6 +548,7 @@ class MainApp(FloatLayout):
         self.autoSongIDCheckbox.active = self.config_file.autoSongID
         self.inGameAuthorCheckbox.active = self.config_file.inGameAuthor
         self.ignoreMinorErrorsCheckbox.active = self.config_file.ignoreMinorErrors
+        self.convertCuesToMidiCheckbox.active = self.config_file.convertCuesToMidi
         self.send_message("PROJECT LOADED")
         
     def save_project(self):
@@ -601,6 +606,7 @@ class MainApp(FloatLayout):
         self.config_file.autoSongID = self.autoSongIDCheckbox.active
         self.config_file.inGameAuthor = self.inGameAuthorCheckbox.active
         self.config_file.ignoreMinorErrors = self.ignoreMinorErrorsCheckbox.active
+        self.config_file.convertCuesToMidi = self.convertCuesToMidiCheckbox.active
         self.config_file.save_config()
         self.send_message("PROJECT SAVED")
         
@@ -761,7 +767,7 @@ class MainApp(FloatLayout):
         advancedCuesReady = False
         expertCuesReady = False
         
-        self.send_message("\n====================================================")
+        self.send_message("====================================================")
         self.send_message("CREATING MOGGSONG FILES...")
         
         self.song_file.moggPath = main_audio_mogg.split(os.sep)[-1]
@@ -924,13 +930,28 @@ class MainApp(FloatLayout):
         self.send_message("====================================================")
         self.send_message("PREPARING DATA FILES...")
         
-        if os.path.isfile(self.midiFileInput.text) == True:
+        if self.error_checker.cuesToMidi:
+            self.midi_converter.targetDirectory = temp_dir
+            self.midi_converter.songID = self.songIDInput.text
+            self.midi_converter.cueFiles = OrderedDict([
+                ("Easy", self.beginnerCuesInput.text),
+                ("Normal", self.moderateCuesInput.text),
+                ("Hard", self.advancedCuesInput.text),
+                ("Expert", self.expertCuesInput.text)
+            ])
+            self.midi_converter.convert_to_midi()
+            self.midi_converter.write_midi()
+            files.append(midi_file)
+            midiFileReady = True
+            self.send_message("CONVERTED cue files into midi")
+        
+        elif os.path.isfile(self.midiFileInput.text) == True:
             shutil.copyfile(self.midiFileInput.text, midi_file)
             files.append(midi_file)
             midiFileReady = True
             self.send_message("CREATED " + midi_file.split(os.sep)[-1])
         else:
-            return False
+            pass
         
             
         

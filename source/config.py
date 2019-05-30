@@ -47,6 +47,7 @@ class config():
     autoSongID = False
     inGameAuthor = False
     ignoreMinorErrors = False
+    convertCuesToMidi = False
     
     def load_config(self):
         f = open(self.configFilename, 'r')
@@ -88,6 +89,7 @@ class config():
         self.autoSongID = desc_file["autoSongID"]
         self.inGameAuthor = desc_file["inGameAuthor"]
         self.ignoreMinorErrors = desc_file["ignoreMinorErrors"]
+        self.convertCuesToMidi = desc_file["convertCuesToMidi"]
         f.close()
         
     def save_config(self):
@@ -128,7 +130,8 @@ class config():
         line = line + "\t\"expert_cues\": " + json.dumps(self.expert_cues) + ",\n"
         line = line + "\t\"autoSongID\": " + json.dumps(self.autoSongID) + ",\n"
         line = line + "\t\"inGameAuthor\": " + json.dumps(self.inGameAuthor) + ",\n"
-        line = line + "\t\"ignoreMinorErrors\": " + json.dumps(self.ignoreMinorErrors) + "\n"
+        line = line + "\t\"ignoreMinorErrors\": " + json.dumps(self.ignoreMinorErrors) + ",\n"
+        line = line + "\t\"convertCuesToMidi\": " + json.dumps(self.convertCuesToMidi) + "\n"
         line = line + "}"
         
         f = open(self.configFilename, "w")
