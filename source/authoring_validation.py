@@ -69,7 +69,9 @@ class authoringValidator():
     def validate_midi(self):
         '''loads midi and reports if there are duplicates in the same track'''
     
-        if self.midi_file=="" or os.path.splitext(self.midi_file)[1] != ".mid":
+        if self.midi_file=="":
+            return True
+        if os.path.splitext(self.midi_file)[1] != ".mid":
             self.major_error = True
             self.add_error("FILE SPECIFIED FOR MIDI FILE IS NOT VALID:\n {midi_file}".format(midi_file=os.path.basename(self.midi_file)))
             return False
