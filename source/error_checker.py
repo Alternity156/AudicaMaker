@@ -291,7 +291,7 @@ class errorChecker():
                 self.sustain_r_channels = oggInfo[1]
                 self.sustain_r_bitrate = oggInfo[2]
                 self.sustain_r_sample_rate = oggInfo[3]
-                self.audio_to_convert.append("_sustain_r", self.sustain_r_audio)
+                self.audio_to_convert.append(["_sustain_r", self.sustain_r_audio])
                 if self.sustain_r_channels != 1:
                     self.minorErrors.append("Right sustain audio does not have 1 channel.")
             except:
