@@ -1,3 +1,5 @@
+I will no longer work on this project. I will however work on the REAPER tool that essentially does the same thing here https://github.com/Alternity156/ReaperAudicaTools
+
 # AudicaMaker
 A tool used to create audica files.
 
